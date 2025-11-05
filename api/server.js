@@ -2,6 +2,7 @@ import express from 'express'
 import env from 'dotenv'
 import connectToDB from '../lib/db.js';
 import authRoutes from './../routes/auth.routes.js'
+import cookieParser from 'cookie-parser';
 env.config()
 const app = express();
 
@@ -9,6 +10,7 @@ const app = express();
 const port = process.env.PORT || 3000
 
 app.use(express.json())
+app.use(cookieParser())
 app.use('/api/v1/auth', authRoutes)
 
 app.get('/', (req, res) => {
@@ -19,7 +21,7 @@ app.get('/', (req, res) => {
 app.use((req, res) => {
     res.status(404).json({
         success: false,
-        message: `Route ${req.originalUrl} not found`,
+        message: `Route ${req.method} ${req.originalUrl} not found`,
     });
 });
 

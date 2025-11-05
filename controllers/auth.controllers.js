@@ -1,9 +1,88 @@
+import { validateLogInCredentials, validateSignUpCredentials } from "../utils/validateUserCredentials.js"
+import User from "../models/user.model.js"
+import bcrypt from "bcryptjs"
+import env from 'dotenv'
+import generateToken from "../utils/generateToken.js"
+env.config();
+export const Login = async (req, res) => {
+    try {
+        const { email, password } = req.body
+        const { isValid, message } = validateLogInCredentials(email, password)
 
+        //check the validation of the login credentials 
+        if (!isValid) return res.status(400).json({ success: false, message })
 
-export const Login = (req, res) => { }
-export const SignUp = (req, res) => { }
-export const Logout = (req, res) => { }
+        //check if the user exists
+        const user = await User.findOne({ email })
+        if (!user) return res.status(404).json({ success: false, message: `User not found` })
 
-export const Profile = (req, res) => {
+        //check if the password is correct 
+        const isPasswordMatch = await bcrypt.compare(password, user.password)
+        if (!isPasswordMatch) return res.status(400).json({ success: false, message: "Incorrect password" })
 
+        //create and assign token
+        generateToken(user._id, user.isAdmin, res)
+
+        return res.status(200).json({
+            success: true,
+            message: "Login successfully",
+            user: { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin }
+        })
+
+    } catch (error) {
+        console.log(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}
+export const SignUp = async (req, res) => {
+    try {
+        const { username, email, password } = req.body
+
+        //check the validation of the signup credentials
+        const { isValid, message } = validateSignUpCredentials(email, password, username)
+        if (!isValid) return res.status(400).json({ success: false, message })
+
+        //encrypting the password 
+        const salt = await bcrypt.genSalt(12)
+        const hashedPassword = await bcrypt.hash(password, salt)
+
+        //check if the user already exists
+        const existingUser = await User.findOne({ email })
+        if (existingUser) return res.status(400).json({ success: false, message: `User already exist please login ` })
+
+        //create the user
+        const user = await User.create({ username, email, password: hashedPassword })
+
+        //create and and assign token
+        generateToken(user._id, user.isAdmin, res)
+        return res.status(201).json({
+            success: true,
+            message: "User created successfully",
+            user: { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin }
+        })
+    } catch (error) {
+        console.log(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+
+}
+export const Logout = (req, res) => {
+    try {
+        res.clearCookie('token')
+        return res.status(200).json({ success: true, message: "Logout successfully" })
+    } catch (error) {
+        console.log(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}
+
+export const Profile = async (req, res) => {
+    try {
+        const { id: userId } = req.user
+        const user = await User.findById(userId).select('-password -__v')
+        return res.status(200).json({ success: true, user })
+    } catch (error) {
+        console.log(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
 }

@@ -29,6 +29,10 @@ const userSchema = mongoose.Schema({
         type: String,
         default: "https://cdn-icons-png.flaticon.com/512/149/149071.png"
     },
+    bio: {
+        type: String,
+        default: "No Bio Yet "
+    },
     progressData: {
         roadmap: [{
             roadmap: {

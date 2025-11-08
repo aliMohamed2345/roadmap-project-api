@@ -76,13 +76,3 @@ export const Logout = (req, res) => {
     }
 }
 
-export const Profile = async (req, res) => {
-    try {
-        const { id: userId } = req.user
-        const user = await User.findById(userId).select('-password -__v')
-        return res.status(200).json({ success: true, user })
-    } catch (error) {
-        console.log(error.message)
-        return res.status(500).json({ success: false, message: error.message })
-    }
-}

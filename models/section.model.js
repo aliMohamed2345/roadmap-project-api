@@ -23,7 +23,11 @@ const sectionSchema = mongoose.Schema({
             enum: ["video", "article", "course"]
         }
     }],
-    isCompleted: { type: Boolean, default: false }
+    isCompleted: { type: Boolean, default: false },
+    difficulty: {
+        type: String,
+        enum: ["Beginner", "Intermediate", "Advanced", "Expert"]
+    }
 }, { timestamps: true })
 
 

@@ -186,38 +186,32 @@ export const deleteUser = async (req, res) => {
     }
 }
 
-
 export const uploadProfileImage = async (req, res) => {
     try {
-        const { id: userId } = req.user;
+        if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
 
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "No image uploaded" });
-        }
+        // Upload from buffer
+        const result = await cloudinary.v2.uploader.upload_stream(
+            {
+                folder: "user_profiles",
+            },
+            async (error, uploadResult) => {
+                if (error) {
+                    console.error(error);
+                    return res.status(500).json({ success: false, message: error.message });
+                }
 
-        // Upload to Cloudinary
-        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-            folder: "user_profiles",
-            public_id: `user_${userId}`,
-            transformation: [{ width: 300, height: 300, crop: "fill" }],
-        });
+                // Save Cloudinary URL to user
+                const user = await User.findById(req.user.id);
+                user.imageURL = uploadResult.secure_url;
+                await user.save();
 
-        // Remove the local file
-        fs.unlinkSync(req.file.path);
+                return res.status(200).json({ success: true, imageURL: uploadResult.secure_url });
+            }
+        );
 
-        // Update user image URL
-        const user = await User.findByIdAndUpdate(
-            userId,
-            { imageURL: uploadResult.secure_url },
-            { new: true }
-        ).select("-password -__v");
-
-        return res.status(200).json({
-            success: true,
-            message: "Profile image updated successfully",
-            imageURL: user.imageURL,
-        });
-
+        // Write the file buffer into the upload stream
+        result.end(req.file.buffer);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, message: error.message });

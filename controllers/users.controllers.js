@@ -8,7 +8,10 @@ export const Profile = async (req, res) => {
     try {
         const { id: userId } = req.user
 
-        const user = await User.findById(userId).select('-password -__v')
+        const user = await User.findById(userId).select('-password -__v').populate({
+            path: 'progressData.quiz.quiz', // path to populate
+            // select: 'title description questions' // pick only the fields you want
+        });
         return res.status(200).json({ success: true, user })
 
     } catch (error) {

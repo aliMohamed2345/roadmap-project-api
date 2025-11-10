@@ -5,7 +5,7 @@ const userSchema = mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        trim: true, // Removes any leading/trailing whitespace
+        trim: true,
         minlength: [3, 'Username must be at least 3 characters long'],
         maxlength: [50, 'Username cannot be longer than 50 characters'],
     },
@@ -44,11 +44,21 @@ const userSchema = mongoose.Schema({
             quiz: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Quiz",
+                required: true
+            },
+            percentage: Number,
+            totalQuestions: Number,
+            correctAnswers: Number,
+            wrongAnswers: Number,
+            grade: String,
+            status: String,
+            createdAt: {
+                type: Date,
+                default: Date.now
             }
         }]
     }
-}, { timestamps: true })
+}, { timestamps: true });
+
 const User = mongoose.model("User", userSchema);
-
-
 export default User;

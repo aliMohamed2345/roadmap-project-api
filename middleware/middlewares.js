@@ -39,7 +39,6 @@ export const isIdValid = (req, res, next) => {
 }
 
 
-// Store image temporarily before Cloudinary upload
 
 // Memory storage
 const storage = multer.memoryStorage();

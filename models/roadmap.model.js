@@ -10,12 +10,8 @@ const roadmapSchema = mongoose.Schema({
         type: String,
         require: true,
     },
-    sections: [{
-        section: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Section'
-        }
-    }]
+    sections: [{ type: mongoose.Schema.Types.ObjectId, ref: "Section" }]
+
 }, { timestamps: true })
 
 

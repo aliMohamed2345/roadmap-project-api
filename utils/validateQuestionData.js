@@ -24,3 +24,21 @@ export const validateQuestionData = (question, answer, options) => {
 
     return { isValid: true, message: "Valid question data." };
 };
+
+export const validateQuizData = (title, description, rank) => {
+    const allRanks = ["Beginner", "Intermediate", "Advanced", "Expert", "Master"]
+
+    if (!title || !description)
+        return { isValid: false, message: 'Title and description are required.' };
+
+    if (!rank) return { isValid: false, message: "Ranks is required." }
+
+    if (!allRanks.includes(rank))
+        return { isValid: false, message: `Rank must be one of following: ${allRanks.join(', ')}` }
+
+    const wordCount = description.trim().split(/\s+/).length;
+    if (wordCount < 5 || wordCount > 50)
+        return { isValid: false, message: 'Description must be between 5 and 50 words.' };
+
+    return { isValid: true, message: "" };
+}

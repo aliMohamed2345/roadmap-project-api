@@ -13,17 +13,7 @@ const sectionSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Roadmap'
     },
-    resources: [{
-        url: {
-            type: String,
-            require: true
-        },
-        type: {
-            type: String,
-            enum: ["video", "article", "course"]
-        }
-    }],
-    isCompleted: { type: Boolean, default: false },
+    resources: [{ type: mongoose.Schema.Types.ObjectId, ref: "Resource" }],
     difficulty: {
         type: String,
         enum: ["Beginner", "Intermediate", "Advanced", "Expert"]

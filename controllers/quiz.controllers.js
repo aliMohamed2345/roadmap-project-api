@@ -1,11 +1,11 @@
-import { validateQuestionData } from "../utils/validateQuestionData.js";
+import { validateQuestionData, validateQuizData } from "../utils/validateQuestionData.js";
 import Question from "../models/question.model.js";
 import Quiz from '../models/quiz.model.js'
 import User from "../models/user.model.js";
 import mongoose from "mongoose";
 export const getAllQuizData = async (req, res) => {
     try {
-        const quizData = await Quiz.find().populate(`questions`);
+        const quizData = await Quiz.find().select('title _id description rank');
 
         if (!quizData.length)
             return res.status(404).json({
@@ -86,22 +86,11 @@ export const getSpecificQuiz = async (req, res) => {
 export const createQuiz = async (req, res) => {
     try {
         const { title, description, rank } = req.body;
-        const allRanks = ["Beginner", "Intermediate", "Advanced", "Expert", "Master"]
+        //validate the quiz data
+        const { isValid, message } = validateQuizData(title, description, rank)
+        if (!isValid) return res.status(400).json({ success: false, message })
 
-        if (!title || !description || !rank)
-            return res.status(400).json({ success: false, message: 'Title and description are required.' });
-
-        if (!allRanks.includes(rank))
-            return res.status(400).json({ success: false, message: `Rank must be one of following: ${allRanks.join(', ')}` })
-
-        const wordCount = description.trim().split(/\s+/).length;
-        if (wordCount < 5 || wordCount > 50)
-            return res.status(400).json({
-                success: false,
-                message: 'Description must be between 5 and 50 words.'
-            });
-
-        const newQuiz = await Quiz.create({ title, description });
+        const newQuiz = await Quiz.create({ title, description, rank });
 
         return res.status(201).json({
             success: true,
@@ -159,11 +148,10 @@ export const getSpecificQuestion = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
-export const UpdateSpecificQuestion = async (req, res) => {
+export const updateSpecificQuestion = async (req, res) => {
     try {
         const { questionId } = req.params;
         const { question, answer, options } = req.body
-        const updatedData = {}
 
         //checking the validation of the questionId
         if (!mongoose.Types.ObjectId.isValid(questionId)) return res.status(400).json({ success: false, message: 'Invalid Id' });
@@ -172,15 +160,12 @@ export const UpdateSpecificQuestion = async (req, res) => {
         const { isValid, message } = validateQuestionData(question, answer, options)
         if (!isValid) return res.status(400).json({ success: false, message })
 
-        if (question) updatedData.question = question
-        if (answer) updatedData.answer = answer
-        if (options) updatedData.options = options
 
         //checking if the question exist 
         const isQuestionExist = await Question.findById(questionId)
         if (!isQuestionExist) return res.status(404).json({ success: false, message: `Question not found` })
 
-        await Question.findByIdAndUpdate(questionId, updatedData)
+        await Question.findByIdAndUpdate(questionId, { question, answer, options }, { new: true })
 
         return res.status(200).json({ success: true, message: `Question updated successfully` })
 
@@ -190,7 +175,7 @@ export const UpdateSpecificQuestion = async (req, res) => {
     }
 }
 
-export const DeleteSpecificQuestion = async (req, res) => {
+export const deleteSpecificQuestion = async (req, res) => {
     try {
         const { questionId } = req.params;
 
@@ -251,17 +236,8 @@ export const submitAnswers = async (req, res) => {
 
         const wrongAnswers = totalQuestions - correctAnswers;
         const percentage = parseFloat(((correctAnswers / totalQuestions) * 100).toFixed(2));
-
-        // Determine grade
-        let grade;
-        if (percentage >= 90) grade = "A+";
-        else if (percentage >= 80) grade = "A";
-        else if (percentage >= 70) grade = "B";
-        else if (percentage >= 60) grade = "C";
-        else if (percentage >= 50) grade = "D";
-        else grade = "F";
-
-        const status = grade === "F" ? "Failed" : "Passed";
+        //get grade and status
+        const { grade, status } = getGrade(percentage)
 
         // Save progress in user
         const progressData = {
@@ -277,11 +253,6 @@ export const submitAnswers = async (req, res) => {
         await User.findByIdAndUpdate(userId, {
             $push: { "progressData.quiz": progressData }
         });
-
-        // Response with populated quiz info
-        const updatedUser = await User.findById(userId)
-            .select('-password -__v')
-            .populate('progressData.quiz.quiz');
 
         return res.status(200).json({
             success: true,
@@ -310,7 +281,7 @@ export const submitAnswers = async (req, res) => {
 export const restartQuiz = async (req, res) => {
     try {
         const { id: userId } = req.user;
-        const { quizId } = req.params; 
+        const { quizId } = req.params;
 
         // Validate quizId
         if (!quizId) {
@@ -338,3 +309,57 @@ export const restartQuiz = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+export const deleteQuiz = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        //  Find quiz first
+        const quiz = await Quiz.findById(id);
+        if (!quiz) {
+            return res.status(404).json({ success: false, message: "Quiz not found." });
+        }
+
+        // Delete all questions linked to this quiz
+        await Question.deleteMany({ quizId: id });
+
+        // Remove quiz references from all users' progressData
+        await User.updateMany(
+            { "progressData.quiz.quiz": id },
+            { $pull: { "progressData.quiz": { quiz: id } } }
+        );
+
+        // Delete the quiz itself
+        await Quiz.findByIdAndDelete(id);
+
+        // Return response
+        return res.status(200).json({
+            success: true,
+            message: "Quiz, its questions, and user references deleted successfully.",
+        });
+    } catch (error) {
+        console.error("Error deleting quiz:", error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+export const updateQuiz = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, rank } = req.body;
+
+        //validate the quiz data 
+        const { isValid, message } = validateQuizData(title, description, rank)
+        if (!isValid) return res.status(400).json({ success: false, message })
+
+        const isQuizExist = await Quiz.findById(id)
+        if (!isQuizExist) return res.status(404).json({ success: false, message: `Quiz not found` })
+
+        const updatedQuiz = await Quiz.findByIdAndUpdate(id, { title, description, rank }, { new: true })
+
+        return res.status(200).json({ success: true, message: "Quiz updated successfully.", updatedQuiz });
+    } catch (error) {
+        console.error(error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}

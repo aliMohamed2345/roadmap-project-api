@@ -38,6 +38,15 @@ const userSchema = mongoose.Schema({
             roadmap: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Roadmap",
+                required: true
+            },
+            completedSections: [{
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Section"
+            }],
+            numberOfAllSections: {
+                type: Number,
+                default: 0
             }
         }],
         quiz: [{

@@ -9,6 +9,7 @@ import connectToDB from '../lib/db.js';
 import authRoutes from './../routes/auth.routes.js'
 import usersRoutes from './../routes/users.routes.js'
 import quizRoutes from './../routes/quiz.routes.js'
+import roadmapRoutes from './../routes/roadmap.routes.js';
 
 //error handler 
 import { globalErrorHandler, notFoundHandler, } from '../lib/errorHandlers.js';
@@ -24,6 +25,7 @@ app.use(cookieParser())
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/users', usersRoutes)
 app.use('/api/v1/quiz', quizRoutes)
+app.use('/api/v1/roadmap',roadmapRoutes)
 
 app.get('/', (req, res) => {
     res.status(200).json({ message: `Server is running` })

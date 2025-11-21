@@ -1,40 +1,71 @@
-import express from 'express'
-import env from 'dotenv'
+import express from 'express';
+import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
 
-//library
+// Database
 import connectToDB from '../lib/db.js';
 
-//routes
-import authRoutes from './../routes/auth.routes.js'
-import usersRoutes from './../routes/users.routes.js'
-import quizRoutes from './../routes/quiz.routes.js'
+// Routes
+import authRoutes from './../routes/auth.routes.js';
+import usersRoutes from './../routes/users.routes.js';
+import quizRoutes from './../routes/quiz.routes.js';
 import roadmapRoutes from './../routes/roadmap.routes.js';
 
-//error handler 
-import { globalErrorHandler, notFoundHandler, } from '../lib/errorHandlers.js';
+// Error handlers
+import { globalErrorHandler, notFoundHandler } from '../lib/errorHandlers.js';
 
-env.config()
+dotenv.config();
 
 const app = express();
 
-const port = process.env.PORT || 3000
 
-app.use(express.json())
-app.use(cookieParser())
-app.use('/api/v1/auth', authRoutes)
-app.use('/api/v1/users', usersRoutes)
-app.use('/api/v1/quiz', quizRoutes)
-app.use('/api/v1/roadmap',roadmapRoutes)
+app.use(helmet());
+
+// Rate limiting: limit repeated requests to API
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per window
+    message: 'Too many requests from this IP, please try again later',
+});
+app.use(limiter);
+
+// Parse JSON requests
+app.use(express.json());
+
+// Parse cookies
+app.use(cookieParser());
+
+// Data sanitization against NoSQL injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
+
+//routes
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', usersRoutes);
+app.use('/api/v1/quiz', quizRoutes);
+app.use('/api/v1/roadmap', roadmapRoutes);
 
 app.get('/', (req, res) => {
-    res.status(200).json({ message: `Server is running` })
-})
- 
-notFoundHandler(app)
+    res.status(200).json({ message: 'Server is running' });
+});
 
-globalErrorHandler(app)
-connectToDB()
-app.listen(port, () => { console.log(`Server is running on port ${port}`) })
+//error handlers 
+notFoundHandler(app);
+globalErrorHandler(app);
+
+//database connection 
+connectToDB();
+
+//server
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
 
 export default app;

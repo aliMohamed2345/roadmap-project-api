@@ -4,7 +4,6 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
 
 // Database
 import connectToDB from '../lib/db.js';
@@ -42,8 +41,6 @@ app.use(cookieParser());
 // Data sanitization against NoSQL injection
 app.use(mongoSanitize());
 
-// Data sanitization against XSS
-app.use(xss());
 
 //routes
 app.use('/api/v1/auth', authRoutes);

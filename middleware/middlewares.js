@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import multer from "multer";
-import path from "path";
 export const isAdmin = (req, res, next) => {
     try {
         if (!req.user?.isAdmin) return res.status(403).json({ success: false, message: "Unauthorized:You are not an admin" })

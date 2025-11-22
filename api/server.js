@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cors from 'cors'
 
 // Database
 import connectToDB from '../lib/db.js';
@@ -20,7 +21,11 @@ dotenv.config();
 
 const app = express();
 
-
+app.use(cors({
+    origin: `${process.env.CLIENT_URL}`,
+    methods: ['GET', 'POST', "PUT", "DELETE"],
+    credentials: true,
+}))
 app.use(helmet());
 
 // Rate limiting: limit repeated requests to API

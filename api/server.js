@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import mongoSanitize from 'express-mongo-sanitize';
 
 // Database
 import connectToDB from '../lib/db.js';
@@ -37,10 +36,6 @@ app.use(express.json());
 
 // Parse cookies
 app.use(cookieParser());
-
-// Data sanitization against NoSQL injection
-app.use(mongoSanitize());
-
 
 //routes
 app.use('/api/v1/auth', authRoutes);

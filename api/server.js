@@ -16,13 +16,14 @@ import roadmapRoutes from './../routes/roadmap.routes.js';
 
 // Error handlers
 import { globalErrorHandler, notFoundHandler } from '../lib/errorHandlers.js';
+import { allowedOrigin } from '../lib/allowOrigin.js';
 
 dotenv.config();
 
 const app = express();
 
 app.use(cors({
-    origin: `${process.env.CLIENT_URL}`,
+    origin: allowedOrigin,
     methods: ['GET', 'POST', "PUT", "DELETE"],
     credentials: true,
 }))

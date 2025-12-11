@@ -40,7 +40,7 @@ export const isIdValid = (req, res, next) => {
 
 export const checkApiKey = (req, res, next) => {
     try {
-        const { key } = req.query;
+        const key = req.query?.key;
         if (!key) return res.status(401).json({ success: false, message: "Unauthorized: no api key provided" });
         if (key !== process.env.API_KEY) return res.status(401).json({ success: false, message: "Unauthorized: invalid api key" });
         next();
